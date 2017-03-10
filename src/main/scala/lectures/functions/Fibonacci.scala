@@ -43,8 +43,8 @@ object Fibonacci2 extends App {
     if(num <= acc.length)
       acc
     else {
-      val res  = fibsImpl(num - 1, acc)
-      res :+ res(num - 2) + res(num - 3)
+      val acc_len = acc.length
+      fibsImpl(num , acc :+ (acc(acc_len - 1) + acc(acc_len - 2)))
     }
   }
   //println(fibs2(16))

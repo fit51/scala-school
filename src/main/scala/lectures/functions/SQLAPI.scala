@@ -8,10 +8,15 @@ package lectures.functions
   * Метод execute из объекта SQLAPI должен выполнить следующие действия
   * * * * * залогировать ресурс
   * * * * * получить соединение с помощью метода connection
-  * * * * * залогировать соединение
+  * * * * * залогировать запрос
   * * * * * открыть соединение
   * * * * * выполнить SQL
   * * * * * залогировать результат
+  *
+  * В результате в консоль должно быть выведено сообщение
+  *    some DB
+  *    some SQL
+  *    SQL has been executed. Congrats!
   *
   *
   * Обратите внимание на то, что композиция функций учит писать код в декларативном виде
@@ -28,7 +33,7 @@ class SQLAPI(resource :String) {
 
     def open(): Connection = this.copy(opened = true)
 
-    def execute(sql: String): String = if(opened) sql else throw new Exception("You have to open connection before execute")
+    def execute(sql: String): String = if(opened) result else throw new Exception("You have to open connection before execute")
 
   }
 

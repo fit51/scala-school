@@ -3,7 +3,8 @@ package lectures.functions
 /**
   *
   * В объекте 'Computation' в методе computation сравниваются 2 массива.
-  * Результатом метода будет массив, содержащий 2 элемента Array("Клара", "Карла")
+  * Результатом сравнения будет массив, содержащий слова, принадлежащие обоим массивам
+  * В данном случа результатом будет массив, содержащий 2 элемента Array("Клара", "Карла")
   *
   * С помощью Thread.sleep имитируеться прододжительное вычисление
   */
@@ -51,6 +52,8 @@ object CurriedComputation extends App with Data {
 
 /**
   * Допишите реализации методов так, что бы результат совпадал с предыдущими.
+  *
+  * При этом постарайтесь минимизировать количество разбиений строки filterData на отдельные слова.
   */
 object FunctionalComputation extends App with Data {
 
@@ -62,6 +65,3 @@ object FunctionalComputation extends App with Data {
   val result = filterApplied(dataArray)
   result.foreach(print)
 }
-
-
-

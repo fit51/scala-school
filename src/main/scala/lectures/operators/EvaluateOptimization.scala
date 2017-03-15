@@ -1,6 +1,7 @@
 package lectures.operators
 
 import lectures.functions.{Computation, CurriedComputation, Data, FunctionalComputation}
+import org.scalameter._
 
 /**
   * В задачке из lectures.functions.Computations мы реализовали
@@ -21,43 +22,44 @@ import lectures.functions.{Computation, CurriedComputation, Data, FunctionalComp
   */
 object EvaluateOptimization extends App with Data {
 
-  val computationStartTimestamp = System.currentTimeMillis()
 
   // ВЫПОЛНИТЬ В ЦИКЛЕ ОТ 1 ДО 100 Computation.computation
-  for (i <- 1 until 100) {
-    Computation.computation(filterData, dataArray)
+  val timeWarmComputation = withWarmer(new Warmer.Default) measure {
+    for (i <- 1 until 100) {
+      Computation.computation(filterData, dataArray)
+    }
   }
 
-  println("Elapsed time in computation(): " + (System.currentTimeMillis() - computationStartTimestamp))
+  println("Elapsed time in computation(): " + timeWarmComputation)
 
 
 
-  val partiallyAppliedStartTimestamp = System.currentTimeMillis()
 
   // ВЫПОЛНИТЬ В ЦИКЛЕ ОТ 1 ДО 100 CurriedComputation.partiallyAppliedCurriedFunction
-  for (i <- 1 until 100) {
-    CurriedComputation.partiallyAppliedCurriedFunction(dataArray)
+  val timeWarmPartiallyApplied = withWarmer(new Warmer.Default) measure {
+    for (i <- 1 until 100) {
+      CurriedComputation.partiallyAppliedCurriedFunction(dataArray)
+    }
   }
 
-  val partiallyAppliedDuration = System.currentTimeMillis() - partiallyAppliedStartTimestamp
-  println("Elapsed time in partiallyAppliedCurriedFunction(): " + partiallyAppliedDuration)
+  println("Elapsed time in partiallyAppliedCurriedFunction(): " + timeWarmPartiallyApplied)
 
 
 
-  val filterAppliedStartTimestamp = System.currentTimeMillis()
 
   // ВЫПОЛНИТЬ В ЦИКЛЕ ОТ 1 ДО 100 FunctionalComputation.filterApplied
-  for (i <- 1 until 100) {
-    FunctionalComputation.functionalComputation(filterData)(dataArray)
+  val timeWarmFilterApplied = withWarmer(new Warmer.Default) measure {
+    for (i <- 1 until 100) {
+      FunctionalComputation.functionalComputation(filterData)(dataArray)
+    }
   }
 
-  val filterAppliedDuration = System.currentTimeMillis() - filterAppliedStartTimestamp
-  println("Elapsed time in filterApplied():" + filterAppliedDuration)
+  println("Elapsed time in filterApplied():" + timeWarmFilterApplied)
 
   // ВЫВЕСТИ РАЗНИЦУ В ПРОДОЛЖИТЕЛЬНОСТИ ВЫПОЛНЕНИЯ МЕЖДУ КАРРИРОВАННОЙ ВЕРСИЕЙ
   // И ФУНКЦИОНАЛЬНОЙ
 
-  val diff = partiallyAppliedDuration - filterAppliedDuration
+  val diff = timeWarmPartiallyApplied - timeWarmFilterApplied
 
   println(s"Difference is about $diff milliseconds")
 }

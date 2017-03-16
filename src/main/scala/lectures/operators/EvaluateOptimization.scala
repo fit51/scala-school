@@ -37,8 +37,9 @@ object EvaluateOptimization extends App with Data {
 
   // ВЫПОЛНИТЬ В ЦИКЛЕ ОТ 1 ДО 100 CurriedComputation.partiallyAppliedCurriedFunction
   val timeWarmPartiallyApplied = withWarmer(new Warmer.Default) measure {
+    val curriedFunc = CurriedComputation.curriedComputation(filterData)_
     for (i <- 1 until 100) {
-      CurriedComputation.partiallyAppliedCurriedFunction(dataArray)
+      curriedFunc(dataArray)
     }
   }
 
@@ -49,8 +50,9 @@ object EvaluateOptimization extends App with Data {
 
   // ВЫПОЛНИТЬ В ЦИКЛЕ ОТ 1 ДО 100 FunctionalComputation.filterApplied
   val timeWarmFilterApplied = withWarmer(new Warmer.Default) measure {
+    val filterFunc = FunctionalComputation.functionalComputation(filterData)
     for (i <- 1 until 100) {
-      FunctionalComputation.functionalComputation(filterData)(dataArray)
+      filterFunc(dataArray)
     }
   }
 

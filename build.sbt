@@ -31,3 +31,5 @@ libraryDependencies += "com.typesafe.akka" %% "akka-remote" % "2.3.15"
 libraryDependencies += "com.typesafe.akka" %% "akka-slf4j" % "2.3.15"
 
 libraryDependencies +=  "com.typesafe.akka" %% "akka-testkit" % "2.3.15" % "test"
+
+libraryDependencies += "com.storm-enroute" %% "scalameter-core" % "0.6"

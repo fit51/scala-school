@@ -32,15 +32,71 @@ trait BST {
   def find(value: Int): Option[BST]
 }
 
+object BSTImpl {
+  def randomVal = (Math.random()*1000) toInt
+
+  def generate(root: BST, nodesCount: Int): BST = {
+    require(nodesCount > 0)
+    var tempRoot = root
+    for(i <- 1 until nodesCount)
+      tempRoot = tempRoot.add(randomVal)
+    tempRoot
+  }
+}
+
 case class BSTImpl(value: Int,
                    left: Option[BSTImpl] = None,
                    right: Option[BSTImpl] = None) extends BST {
 
-  def add(newValue: Int): BST = ???
+  def add(newValue: Int): BSTImpl = {
+    if (newValue > value)
+      right match {
+        case Some(tree) => BSTImpl(value, left, Some(tree.add(newValue)))
+        case None => BSTImpl(value, left, Some(BSTImpl(newValue)))
+      } else if (newValue < value)
+      left match {
+        case Some(tree) => BSTImpl(value, Some(tree.add(newValue)), right)
+        case None => BSTImpl(value, Some(BSTImpl(newValue)), right)
+      } else
+      this
+  }
 
-  def find(value: Int): Option[BST] = ???
+  def find(newValue: Int): Option[BST] = {
+    if(newValue > value)
+      right match {
+        case Some(tree) => tree.find(newValue)
+        case None =>  None
+      }
+    if(newValue < value)
+      left match {
+        case Some(tree) => tree.find(newValue)
+        case None => None
+      } else
+      Some(this)
+  }
 
-  // override def toString() = ???
+   override def toString(): String = {
+     val curValue = value.toString
+     (left, right) match {
+       case (None, None) => curValue
+       case _ => {
+         val leftBlock = (left match {
+           case Some(tree) => tree.toString
+           case None => ""
+         }) split('\n') toList
+         val rightBlock = (right match {
+           case Some(tree) => tree.toString
+           case None => ""
+         }) split('\n') toList
+         val leftWidth = (0 until leftBlock.head.length).map(_ => " ").mkString
+         val rightWidth = (0 until rightBlock.head.length).map(_ => " ").mkString
+         val valWidth = (0 until curValue.length).map(_ => " ").mkString
+         val currentBlock = leftWidth + curValue + rightWidth ::
+           (leftBlock.zipAll(rightBlock, leftWidth, rightWidth) map { (x) => { x._1 + valWidth + x._2} })
+         currentBlock mkString ("\n")
+       }
+     }
+   }
 
 }
 
@@ -56,7 +112,7 @@ object TreeTest extends App {
 
   // Generate huge tree
   val root: BST = BSTImpl(maxValue / 2)
-  val tree: BST = ??? // generator goes here
+  val tree: BST = BSTImpl.generate(root, nodesCount)
 
   // add marker items
   val testTree = tree.add(markerItem).add(markerItem2).add(markerItem3)

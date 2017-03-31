@@ -33,12 +33,10 @@ trait BST {
 }
 
 object BSTImpl {
-  def randomVal = (Math.random()*1000) toInt
-
-  def generate(root: BST, nodesCount: Int): BST = {
-    require(nodesCount > 0)
+  def generate(root: BST, nodesCount: Int, maxValue: Int): BST = {
+    def randomVal = (Math.random() * maxValue) toInt
     var tempRoot = root
-    for(i <- 1 until nodesCount)
+    for (i <- 1 until nodesCount)
       tempRoot = tempRoot.add(randomVal)
     tempRoot
   }
@@ -112,7 +110,7 @@ object TreeTest extends App {
 
   // Generate huge tree
   val root: BST = BSTImpl(maxValue / 2)
-  val tree: BST = BSTImpl.generate(root, nodesCount)
+  val tree: BST = BSTImpl.generate(root, nodesCount, maxValue)
 
   // add marker items
   val testTree = tree.add(markerItem).add(markerItem2).add(markerItem3)

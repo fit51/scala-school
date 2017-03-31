@@ -35,6 +35,7 @@ class SortingStuffGeneratorBasedTest extends WordSpec with Matchers with Propert
   val bookGenerator = Gen.alphaStr.map(name => Book(name, Random.nextBoolean()))
   val interestingBookGen = bookGenerator.filter(_.isInteresting)
   val knifeGen = Gen.oneOf(Some(Knife), None)
+  val stuffGen = Gen.listOfN(100, Gen.oneOf(cheepWatchGen, bookGenerator))
   val brandBootsGen = Gen.oneOf("Adidas", "Converse").map(b => Boots(b))
   val chineseBootsGen = Gen.alphaStr.map(b => Boots(b))
 
@@ -76,18 +77,13 @@ class SortingStuffGeneratorBasedTest extends WordSpec with Matchers with Propert
     }
     "find knife" which {
       "was occasionally disposed" in {
-        forAll(knifeGen) { (mayBeKnife: Option[Knife.type ]) => {
-          val ms = generatorDrivenConfig.minSuccessful
-
-          val books = (1 to ms) flatMap { _ => interestingBookGen.sample }
-          val watches = (1 to ms) flatMap { _ => cheepWatchGen.sample }
+        forAll(knifeGen, stuffGen) { (mayBeKnife: Option[Knife.type], stuff) => {
           mayBeKnife match {
             case Some(knife) => ((SortingStuff.sortJunk _ andThen SortingStuff.findMyKnife)
-              (Random.shuffle (knife +: (books ++ watches)).toList)) shouldBe true
+              (knife +: stuff)) shouldBe true
             case None => ((SortingStuff.sortJunk _ andThen SortingStuff.findMyKnife)
-              (Random.shuffle (books ++ watches).toList)) shouldBe false
+              (stuff)) shouldBe false
           }
-
         }
         }
       }
@@ -95,16 +91,17 @@ class SortingStuffGeneratorBasedTest extends WordSpec with Matchers with Propert
 
     "put boots in a proper place" when {
       "boots were produced by Converse or Adidas" in {
-        val ms = generatorDrivenConfig.minSuccessful
-
-        val brandBoots = (1 to ms) flatMap { _ => brandBootsGen.sample }
-        val chineseBoots = (1 to ms) flatMap { _ => chineseBootsGen.sample }
-
-        val StuffBox(goodBooks, niceWatches, goodBoots, junk) = SortingStuff.sortJunk(
-          Random.shuffle(brandBoots ++ chineseBoots).toList
-        )
-        goodBoots should have size brandBoots.size
-        junk should have size chineseBoots.size
+        forAll(Gen.listOfN(100, brandBootsGen), Gen.listOfN(100, chineseBootsGen), stuffGen) {
+          (brandBoots, chineseBoots, stuff) => {
+            val StuffBox(_, _, goodBoots, junk) =
+              SortingStuff.sortJunk(Random.shuffle(brandBoots ++ chineseBoots ++ stuff))
+            goodBoots should contain theSameElementsAs brandBoots
+            for(chineseBoot <- chineseBoots) {
+              goodBoots should not contain (chineseBoot)
+              junk should contain (chineseBoot)
+            }
+          }
+        }
       }
     }
   }

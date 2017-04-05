@@ -1,6 +1,6 @@
 package lectures.matching
 
-import lectures.matching.SortingStuff.{Book, StuffBox, Watches}
+import lectures.matching.SortingStuff._
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
@@ -34,6 +34,11 @@ class SortingStuffGeneratorBasedTest extends WordSpec with Matchers with Propert
   val cheepWatchGen: Gen[Watches] = Gen.zip(Gen.choose(0f, 1000f), Gen.alphaStr).map(w => Watches(w._2, w._1))
   val bookGenerator = Gen.alphaStr.map(name => Book(name, Random.nextBoolean()))
   val interestingBookGen = bookGenerator.filter(_.isInteresting)
+//  val knifeGen = Gen.oneOf(Some(Knife), None)
+  val knifeOrStuffGen: Gen[Stuff] =  Gen.alphaStr.flatMap(name => Gen.oneOf(Knife, Book(name, Random.nextBoolean())))
+  val stuffGen = Gen.listOfN(100, Gen.oneOf(cheepWatchGen, bookGenerator))
+  val brandBootsGen = Gen.oneOf("Adidas", "Converse").map(b => Boots(b))
+  val chineseBootsGen = Gen.alphaStr.map(b => Boots(b))
 
   // Override configuration if you need
   implicit override val generatorDrivenConfig =
@@ -59,7 +64,7 @@ class SortingStuffGeneratorBasedTest extends WordSpec with Matchers with Propert
 
   "Sort stuff" should {
     "return collections" which {
-      "total size is equal to item amount" in pendingUntilFixed{
+      "total size is equal to item amount" in {
         val ms = generatorDrivenConfig.minSuccessful
 
         val books = (1 to ms) flatMap { _ => interestingBookGen.sample }
@@ -72,11 +77,40 @@ class SortingStuffGeneratorBasedTest extends WordSpec with Matchers with Propert
       }
     }
     "find knife" which {
-      "was occasionally disposed" in pending
+      "was occasionally disposed" in {
+//        forAll(knifeGen, stuffGen) { (mayBeKnife: Option[Knife.type], stuff) => {
+//          mayBeKnife match {
+//            case Some(knife) => ((SortingStuff.sortJunk _ andThen SortingStuff.findMyKnife)
+//              (knife +: stuff)) shouldBe true
+//            case None => ((SortingStuff.sortJunk _ andThen SortingStuff.findMyKnife)
+//              (stuff)) shouldBe false
+//          }
+//        }
+        forAll(knifeOrStuffGen) { (stuff: Stuff) =>
+          stuff match {
+            case Knife => ((SortingStuff.sortJunk _ andThen SortingStuff.findMyKnife)
+              (List(stuff))) shouldBe true
+            case _ => ((SortingStuff.sortJunk _ andThen SortingStuff.findMyKnife)
+              (List(stuff))) shouldBe false
+          }
+        }
+      }
     }
 
     "put boots in a proper place" when {
-      "boots were produced by Converse or Adidas" in pending
+      "boots were produced by Converse or Adidas" in {
+        forAll(Gen.listOfN(100, brandBootsGen), Gen.listOfN(100, chineseBootsGen), stuffGen) {
+          (brandBoots, chineseBoots, stuff) => {
+            val StuffBox(_, _, goodBoots, junk) =
+              SortingStuff.sortJunk(Random.shuffle(brandBoots ++ chineseBoots ++ stuff))
+            goodBoots should contain theSameElementsAs brandBoots
+            for(chineseBoot <- chineseBoots) {
+              goodBoots should not contain (chineseBoot)
+              junk should contain (chineseBoot)
+            }
+          }
+        }
+      }
     }
   }
 }

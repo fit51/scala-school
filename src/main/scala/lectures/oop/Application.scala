@@ -23,21 +23,23 @@ trait UsefulService {
 }
 
 trait TestServiceImpl extends UsefulService {
+  self: SQLAPI =>
   private val sql = "do the SQL query and then count words"
-  def doSomeService() = ??? //execute(sql) //подсчитайте количество слов в результате execute
+  def doSomeService() = execute(sql) split("\\s") length //подсчитайте количество слов в результате execute
 }
 
 trait ProductionServiceImpl extends UsefulService {
+  self: SQLAPI =>
   private val sql = "do the SQL query and than count 'a' sympols"
-  def doSomeService() = ??? //execute(sql) // подсчитайте сколько символов 'a' в полученной строке
+  def doSomeService() = execute(sql).count(_ == 'a') // подсчитайте сколько символов 'a' в полученной строке
 }
 
 class Application(isTestEnv: Boolean) {
 
   val usefulService : UsefulService = if (isTestEnv)
-   ??? //передайте "test db Resource" в качестве ресурсв в конструктор SQLAPI
+   new SQLAPI("test db Resource") with TestServiceImpl //передайте "test db Resource" в качестве ресурсв в конструктор SQLAPI
   else
-   ??? //передайте "production Resource" в качестве ресурсв в конструктор SQLAPI
+    new SQLAPI("production Resource") with ProductionServiceImpl //передайте "production Resource" в качестве ресурсв в конструктор SQLAPI
 
   def doTheJob() = usefulService.doSomeService()
 

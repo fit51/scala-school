@@ -29,8 +29,7 @@ class Smooth[T](thunk: => T) {
    var is_running = new AtomicBoolean(false)
    var resut: AtomicReference[Future[T]] = new AtomicReference[Future[T]](null)
 
-   def apply(): Future[T] = if (is_running.get()) resut.get() else {
-      is_running.set(true)
+   def apply(): Future[T] = if (is_running.getAndSet(true)) resut.get() else {
       val f = Future {
          thunk
       }
@@ -44,7 +43,6 @@ class Smooth[T](thunk: => T) {
 
 object SmoothExample extends App {
    val executeCode1 = Smooth({
-      var i = 0
       Thread.sleep(1000)
       (Random.alphanumeric take 10 toList) mkString
    })

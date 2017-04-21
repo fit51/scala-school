@@ -47,16 +47,11 @@ case class GeneralBSTImpl[T: Appliable](override val value: T,
   val applicator = implicitly[Appliable[T]]
 
   override def find(newValue: T): Option[GeneralBST[T]] = {
-    if(applicator.compare(newValue, value) > 0)
-      right match {
-        case Some(tree) => tree.find(newValue)
-        case None =>  None
-      }
-    if(applicator.compare(newValue, value) < 0)
-      left match {
-        case Some(tree) => tree.find(newValue)
-        case None => None
-      } else
+    if (applicator.compare(newValue, value) > 0)
+      right flatMap { _.find(newValue) }
+    else if (applicator.compare(newValue, value) < 0)
+      left flatMap { _.find(newValue) }
+    else
       Some(this)
   }
 

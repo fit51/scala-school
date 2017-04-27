@@ -1,8 +1,8 @@
 package lectures.concurrent
 
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
+import java.util.concurrent.atomic.AtomicBoolean
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, Future, Promise}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.util._
@@ -26,19 +26,24 @@ object Smooth{
 
 class Smooth[T](thunk: => T) {
 
+   var res = Promise[T]()
    var is_running = new AtomicBoolean(false)
-   var resut: AtomicReference[Future[T]] = new AtomicReference[Future[T]](null)
 
-   def apply(): Future[T] = if (is_running.getAndSet(true)) resut.get() else {
-      val f = Future {
-         thunk
+   def apply(): Future[T] = {
+      if (is_running.getAndSet(true)) res.future
+      else {
+         val f = Future {
+            thunk
+         }
+         f onComplete {
+            case _ => is_running.set(false)
+         }
+         res.tryCompleteWith(f)
+         f
       }
-      resut.set(f)
-      f onComplete {
-         case _ => is_running.set(false)
-      }
-      f
    }
+
+   def then_apply() = res.future
 }
 
 object SmoothExample extends App {
@@ -46,20 +51,42 @@ object SmoothExample extends App {
       Thread.sleep(1000)
       (Random.alphanumeric take 10 toList) mkString
    })
-   var res1 = executeCode1()
-   res1 onSuccess {
-      case result => println(s"First res = $result")
+   //Emulate Situation when thread enters "then" block (res.future) before
+   // "else" block is finished by the first thread, that called apply
+   var fut0 = executeCode1.then_apply()
+   var fut1 = executeCode1()
+   Thread.sleep(100)
+   val fut2 = executeCode1()
+   for {
+      res0 <- fut0
+      res1 <- fut1
+      res2 <- fut2
+   } {
+      println(s"Zero res = $res0")
+      println(s"First res = $res1")
+      println(s"Second res = $res2")
+      println(s"First eq Second ${res1 == res2}")
+      println(s"First eq Zero ${res1 == res0}")
+      /* Ex.:
+Zero res = uQMKcd0NCE
+First res = uQMKcd0NCE
+Second res = uQMKcd0NCE
+First eq Second true
+First eq Zero true
+       */
    }
-   val res2 = executeCode1()
-   res2 onSuccess {
-      case result => println(s"Second res = $result")
-   }
-   println("Calls during second are equal: " + (res1 eq res2))
    Thread.sleep(1100)
-   val res3 = executeCode1()
-   res3 onSuccess {
-      case result => println(s"Third res = $result")
+   val fut3 = executeCode1()
+   for {
+      res1 <- fut1
+      res3 <- fut3
+   } {
+      println(s"Third res = $res3")
+      println(s"First eq Third ${res1 == res3}")
    }
-   println("Calls after a second are equal: " + (res1 eq res3))
-   Await.result(res3, Duration.Inf)
+   /* Ex.:
+Third res = mVCaXNrKV8
+First eq Third false
+ */
+   Await.result(fut3, Duration.Inf)
 }

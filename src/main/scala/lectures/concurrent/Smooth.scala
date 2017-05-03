@@ -27,13 +27,16 @@ object Smooth{
 class Smooth[T](thunk: => T) {
 
    var res = Promise[T]()
-   var started = new AtomicBoolean(false)
+   var is_running = new AtomicBoolean(false)
 
    def apply(): Future[T] = {
-      if (started.getAndSet(true)) res.future
+      if (is_running.getAndSet(true)) res.future
       else {
          val f = Future {
             thunk
+         }
+         f onComplete {
+            case _ => is_running.set(false)
          }
          res.tryCompleteWith(f)
          f
@@ -50,35 +53,40 @@ object SmoothExample extends App {
    })
    //Emulate Situation when thread enters "then" block (res.future) before
    // "else" block is finished by the first thread, that called apply
-   // and after
    var fut0 = executeCode1.then_apply()
    var fut1 = executeCode1()
    Thread.sleep(100)
    val fut2 = executeCode1()
-   Thread.sleep(1100)
-   val fut3 = executeCode1()
    for {
       res0 <- fut0
       res1 <- fut1
       res2 <- fut2
-      res3 <- fut3
    } {
       println(s"Zero res = $res0")
       println(s"First res = $res1")
       println(s"Second res = $res2")
-      println(s"Third res = $res3")
       println(s"First eq Second ${res1 == res2}")
       println(s"First eq Zero ${res1 == res0}")
-      println(s"First eq Third ${res1 == res3}")
       /* Ex.:
 Zero res = uQMKcd0NCE
 First res = uQMKcd0NCE
 Second res = uQMKcd0NCE
-Third res = uQMKcd0NCE
 First eq Second true
 First eq Zero true
-First eq Third true
        */
    }
+   Thread.sleep(1100)
+   val fut3 = executeCode1()
+   for {
+      res1 <- fut1
+      res3 <- fut3
+   } {
+      println(s"Third res = $res3")
+      println(s"First eq Third ${res1 == res3}")
+   }
+   /* Ex.:
+Third res = mVCaXNrKV8
+First eq Third false
+ */
    Await.result(fut3, Duration.Inf)
 }

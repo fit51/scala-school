@@ -1,6 +1,7 @@
 package lectures.concurrent
 
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
+import java.util.function.UnaryOperator
 
 import scala.concurrent.{Await, Future, Promise}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -26,11 +27,11 @@ object Smooth{
 
 class Smooth[T](thunk: => T) {
 
-   var res = Promise[T]()
-   var is_running = new AtomicBoolean(false)
+   private val res = new AtomicReference(Promise[T]())
+   private val is_running = new AtomicBoolean(false)
 
    def apply(): Future[T] = {
-      if (is_running.getAndSet(true)) res.future
+      if (is_running.getAndSet(true)) res.get.future
       else {
          val f = Future {
             thunk
@@ -38,12 +39,16 @@ class Smooth[T](thunk: => T) {
          f onComplete {
             case _ => is_running.set(false)
          }
-         res.tryCompleteWith(f)
-         f
+         res.updateAndGet(new UnaryOperator[Promise[T]] {
+            override def apply(p: Promise[T]): Promise[T] = {
+               p.tryCompleteWith(f)
+               Promise[T]().tryCompleteWith(f)
+            }
+         }).future
       }
    }
 
-   def then_apply() = res.future
+   def then_apply() = res.get.future
 }
 
 object SmoothExample extends App {
@@ -77,16 +82,24 @@ First eq Zero true
    }
    Thread.sleep(1100)
    val fut3 = executeCode1()
+   Thread.sleep(100)
+   val fut4 = executeCode1()
    for {
       res1 <- fut1
       res3 <- fut3
+      res4 <- fut4
    } {
       println(s"Third res = $res3")
+      println(s"Forth res = $res4")
       println(s"First eq Third ${res1 == res3}")
+      println(s"Third eq Forth ${res3 == res4}")
    }
    /* Ex.:
-Third res = mVCaXNrKV8
+Third res = WsCpjLjoco
+Forth res = WsCpjLjoco
 First eq Third false
+Third eq Forth true
  */
-   Await.result(fut3, Duration.Inf)
+   Await.result(fut4, Duration.Inf)
+   Thread.sleep(10)
 }

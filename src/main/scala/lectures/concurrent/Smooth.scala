@@ -1,7 +1,6 @@
 package lectures.concurrent
 
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
-import java.util.function.UnaryOperator
+import java.util.concurrent.atomic.{AtomicBoolean}
 
 import scala.concurrent.{Await, Future, Promise}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -27,11 +26,11 @@ object Smooth{
 
 class Smooth[T](thunk: => T) {
 
-   private val res = new AtomicReference(Promise[T]())
+   @volatile private var res = Promise[T]()
    private val is_running = new AtomicBoolean(false)
 
    def apply(): Future[T] = {
-      if (is_running.getAndSet(true)) res.get.future
+      if (is_running.getAndSet(true)) res.future
       else {
          val f = Future {
             thunk
@@ -39,16 +38,14 @@ class Smooth[T](thunk: => T) {
          f onComplete {
             case _ => is_running.set(false)
          }
-         res.updateAndGet(new UnaryOperator[Promise[T]] {
-            override def apply(p: Promise[T]): Promise[T] = {
-               p.tryCompleteWith(f)
-               Promise[T]().tryCompleteWith(f)
-            }
-         }).future
+         res.tryCompleteWith(f)                 //for cases, when some thread managed to enter then,
+                                                // before Promise was completed with future
+         res = Promise[T]().tryCompleteWith(f)
+         f
       }
    }
 
-   def then_apply() = res.get.future
+   def then_apply() = res.future
 }
 
 object SmoothExample extends App {

@@ -32,16 +32,14 @@ class Smooth[T](thunk: => T) {
    def apply(): Future[T] = {
       if (is_running.getAndSet(true)) res.future
       else {
+         res = Promise[T]()
          val f = Future {
             thunk
          }
          f onComplete {
             case _ => is_running.set(false)
          }
-         res.tryCompleteWith(f)                 //for cases, when some thread managed to enter then,
-                                                // before Promise was completed with future
-         res = Promise[T]().tryCompleteWith(f)
-         f
+         res.tryCompleteWith(f).future
       }
    }
 

@@ -17,8 +17,19 @@ import scala.collection.SeqView
 
 object LazySchedulerView {
 
+//      "it already has expired" in {
+//        val g = Gen.listOfN(100, Gen.alphaStr)
+//        forAll(g) { l =>
+//          val r = l.lazySchedule(-1).map {
+//            identity
+//          }
+//          r should have size 0
+//        }
+//      }
+//    }
   implicit class SeqViewConverter[A](f: Seq[A]) {
     val c = Clock.systemDefaultZone()
+    val emptySeq = Seq()
 
     /**
       *
@@ -27,7 +38,16 @@ object LazySchedulerView {
       */
     def lazySchedule(expirationTimeout: Long): SeqView[A, Seq[_]]  = {
       val i = c.instant().plusMillis(expirationTimeout)
-      ???
+
+      new SeqView[A, Seq[_]] {
+        override def iterator: Iterator[A] = if(i.isAfter(c.instant())) f.iterator else emptySeq.iterator
+
+        override protected def underlying: Seq[_] = if(i.isAfter(c.instant())) f else emptySeq
+
+        override def length: Int = if(i.isAfter(c.instant())) f.length else emptySeq.length
+
+        override def apply(idx: Int): A = if(i.isAfter(c.instant())) f(idx) else emptySeq(idx)
+      }
     }
   }
 }
